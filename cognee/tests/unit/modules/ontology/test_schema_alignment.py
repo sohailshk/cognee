@@ -42,6 +42,29 @@ def _realizes(edges) -> dict:
     return {source: props for source, _, name, props in edges if name == REALIZES_RELATIONSHIP}
 
 
+def test_a_table_named_in_the_plural_of_an_se_class_realizes_it():
+    resolver = _crm_resolver()
+    for class_name in ("Database", "Warehouse", "Purchase"):
+        resolver.graph.add((NS[class_name], RDF.type, OWL.Class))
+    resolver.build_lookup()
+    names = ["databases", "public.warehouses", "purchases"]
+    table_names = {uuid4(): name for name in names}
+
+    entity_types, edges = align_tables_with_ontology(table_names, resolver)
+
+    type_names = {entity_type.id: entity_type.name for entity_type in entity_types}
+    realized = {
+        table_names[source]: type_names[target]
+        for source, target, name, _ in edges
+        if name == REALIZES_RELATIONSHIP
+    }
+    assert realized == {
+        "databases": "database",
+        "public.warehouses": "warehouse",
+        "purchases": "purchase",
+    }
+
+
 def test_a_table_realizes_the_class_its_name_is_the_exact_key_of():
     resolver = _crm_resolver()
     for class_name in ("Product", "Order", "Address", "CustomerAccount"):

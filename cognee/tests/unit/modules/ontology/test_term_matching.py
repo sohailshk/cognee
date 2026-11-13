@@ -61,3 +61,25 @@ def test_singular_forms():
     assert singular("customers") == "customer"
     assert singular("status") == "status"
     assert singular("bus") == "bus"
+
+
+def test_lookup_words_finds_classes_whose_plural_only_adds_an_s():
+    # ``singular`` cuts "-ses" / "-zes" / "-ches" to the stem ("classes" -> "class"),
+    # so the plural of a class that ends in "-se" / "-ze" / "-che" needs the other form.
+    resolver = SimpleNamespace(
+        lookup={
+            "classes": dict.fromkeys(
+                ["Database", "License", "Size", "Cache", "Class", "Address", "Branch"]
+            )
+        }
+    )
+    index = compact_key_index(resolver, "classes")
+    assert lookup_words(["databases"], index) == "Database"
+    assert lookup_words(["licenses"], index) == "License"
+    assert lookup_words(["sizes"], index) == "Size"
+    assert lookup_words(["caches"], index) == "Cache"
+    assert lookup_words(["customer", "databases"], index) is None
+    # The classes that did work keep working.
+    assert lookup_words(["classes"], index) == "Class"
+    assert lookup_words(["addresses"], index) == "Address"
+    assert lookup_words(["branches"], index) == "Branch"

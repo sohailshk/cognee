@@ -82,6 +82,20 @@ def singular(token: str) -> str:
     return token
 
 
+def singular_forms(token: str) -> tuple[str, ...]:
+    """Every singular :func:`singular` could have meant, shortest first.
+
+    ``singular`` strips two letters from ``-ses`` / ``-zes`` / ``-ches``, which is right
+    for ``classes`` and ``branches`` but wrong for ``databases``, ``sizes`` and
+    ``caches``, whose singular only loses the ``s``. The two cannot be told apart from
+    the word alone, so exact lookups try both.
+    """
+    forms = (singular(token),)
+    if len(token) > _MIN_SINGULAR_LENGTH and token.endswith(("ses", "zes", "ches")):
+        forms += (token[:-1],)
+    return forms
+
+
 def multiword_match_is_sound(term: str, matched_name: str) -> bool:
     """Reject fuzzy matches where a multi-word term drags in an unrelated word.
 
@@ -139,7 +153,8 @@ def lookup_words(words: list[str], index: Mapping[str, str]) -> str | None:
     """
     if not words or (len(words) == 1 and words[0] in _STOPWORDS):
         return None
-    for form in ("".join(words), "".join(words[:-1]) + singular(words[-1])):
+    head = "".join(words[:-1])
+    for form in ("".join(words), *(head + last for last in singular_forms(words[-1]))):
         key = index.get(compact(form))
         if key is not None:
             return key

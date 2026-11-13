@@ -356,3 +356,18 @@ async def test_a_new_term_is_walked_off_the_event_loop(configured, monkeypatch):
 
     assert [concept.canonical_name for concept in grounding] == ["CreditExposure"]
     assert walked_on and walked_on[0] != threading.get_ident()
+
+
+def test_ground_query_finds_the_plural_of_a_class_ending_in_se():
+    resolver = _finance_resolver()
+    resolver.graph.add((NS.Database, RDF.type, OWL.Class))
+    resolver.graph.add((NS.Warehouse, RDF.type, OWL.Class))
+    resolver.build_lookup()
+
+    grounding = ground_query("which databases and warehouses hold customers?", resolver)
+
+    assert {concept.canonical_name for concept in grounding} == {
+        "Database",
+        "Warehouse",
+        "Customer",
+    }
